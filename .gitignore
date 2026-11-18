@@ -1,0 +1,13 @@
+.github/
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+*.tgz
+*.zip
+releases/
+dist/
+__pycache__/
+.DS_Store
+Thumbs.db

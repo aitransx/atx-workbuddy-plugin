@@ -1,0 +1,17 @@
+{
+  "name": "@aitransx/workbuddy-atx-assistant",
+  "version": "0.2.0",
+  "private": true,
+  "author": "AITransX",
+  "homepage": "https://github.com/aitransx/atx-workbuddy-plugin#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/aitransx/atx-workbuddy-plugin.git" },
+  "bugs": { "url": "https://github.com/aitransx/atx-workbuddy-plugin/issues" },
+  "license": "UNLICENSED",
+  "type": "module",
+  "description": "ATX assistant plugin for WorkBuddy: one-step ATX model import, web search, image generation and vision.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "pack": "node scripts/pack.mjs"
+  }
+}

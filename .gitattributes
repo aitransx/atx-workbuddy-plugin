@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+# Preserve the official SVG bytes, including upstream whitespace.
+plugins/atx-assistant/icon.svg -text -whitespace

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "atx": {
+      "type": "stdio",
+      "command": "${CODEBUDDY_PLUGIN_ROOT}/bin/run-node",
+      "args": ["${CODEBUDDY_PLUGIN_ROOT}/server/index.mjs"],
+      "cwd": "${CODEBUDDY_PLUGIN_ROOT}",
+      "env": {
+        "ATX_DATA_DIR": "${CODEBUDDY_PLUGIN_DATA}",
+        "AITRANSX_API_KEY": "${AITRANSX_API_KEY:-}",
+        "AITRANSX_BASE_URL": "${AITRANSX_BASE_URL:-}"
+      }
+    }
+  }
+}

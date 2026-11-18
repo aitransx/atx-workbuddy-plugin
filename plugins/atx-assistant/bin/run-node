@@ -1,0 +1,17 @@
+#!/bin/sh
+# Locate the Node runtime that WorkBuddy ships and run the ATX MCP server (macOS / Linux).
+# WorkBuddy exports its managed Node directory via WORKBUDDY_EXTRA_PATHS (':' or ';' separated).
+NODE_BIN=""
+if [ -n "$WORKBUDDY_EXTRA_PATHS" ]; then
+  OLD_IFS="$IFS"; IFS=':;'
+  for d in $WORKBUDDY_EXTRA_PATHS; do
+    if [ -z "$NODE_BIN" ] && [ -x "$d/node" ]; then NODE_BIN="$d/node"; fi
+  done
+  IFS="$OLD_IFS"
+fi
+if [ -z "$NODE_BIN" ]; then NODE_BIN="$(command -v node 2>/dev/null)"; fi
+if [ -z "$NODE_BIN" ]; then
+  echo "[atx-assistant] FATAL: cannot locate node (checked WORKBUDDY_EXTRA_PATHS and PATH)" >&2
+  exit 127
+fi
+exec "$NODE_BIN" "$@"

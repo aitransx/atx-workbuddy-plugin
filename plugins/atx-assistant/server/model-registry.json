@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "recommendedChat": [
+    "anthropic/claude-opus-5.5",
+    "anthropic/claude-sonnet-5.5",
+    "openai/gpt-6.1-sol",
+    "google/gemini-4-hydrogen",
+    "google/gemini-4-carbon",
+    "google/gemini-4-argon"
+  ],
+  "chatSupport": "unknown",
+  "defaults": { "image": "openai/gpt-image-2", "vision": "openai/gpt-6.1-terra" },
+  "media": [
+    { "id": "openai/gpt-6.1-terra", "vision": true, "image": false, "source": "user-confirmed" },
+    { "id": "openai/gpt-image-2", "vision": false, "image": true, "source": "user-confirmed" }
+  ]
+}

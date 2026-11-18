@@ -1,0 +1,21 @@
+{
+  "name": "aitransx",
+  "description": "ATX (AITransX) 官方 WorkBuddy 插件市场",
+  "owner": {
+    "name": "AITransX",
+    "url": "https://aitransx.com"
+  },
+  "plugins": [
+    {
+      "name": "atx-assistant",
+      "source": "./plugins/atx-assistant",
+      "description": "在 WorkBuddy 中一键接入 ATX 中转模型，并用 ATX 联网搜索、读网页、生图、识图。调用可能收费。",
+      "version": "0.2.0",
+      "author": { "name": "AITransX" },
+      "homepage": "https://github.com/aitransx/atx-workbuddy-plugin#readme",
+      "repository": "https://github.com/aitransx/atx-workbuddy-plugin",
+      "keywords": ["atx", "aitransx", "models", "search", "image", "vision", "中转", "模型配置", "生图", "识图"],
+      "category": "productivity"
+    }
+  ]
+}
