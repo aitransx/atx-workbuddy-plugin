@@ -24,7 +24,7 @@ try {
   execFileSync('git', ['archive', '--format=zip', '-o', archive, tree, '.codebuddy-plugin', 'plugins', 'skill-upload', 'README.md', 'NOTICE.md', 'RELEASING.md'], { cwd: root, stdio: 'inherit' })
   // 仅重组 HEAD 归档；白名单拒绝个人配置，原样保留现有设置脚本。
   execFileSync('python', ['-c', `
-import sys, zipfile
+import sys, zipfile, copy
 from pathlib import PurePosixPath
 source, market, skill = sys.argv[1:]
 with zipfile.ZipFile(source) as src, zipfile.ZipFile(market, 'w', zipfile.ZIP_DEFLATED) as dst, zipfile.ZipFile(skill, 'w', zipfile.ZIP_DEFLATED) as upload:
@@ -37,15 +37,16 @@ with zipfile.ZipFile(source) as src, zipfile.ZipFile(market, 'w', zipfile.ZIP_DE
             raise RuntimeError('归档含个人配置或缓存：' + info.filename)
         data = src.read(info)
         if path.parts[0] != 'skill-upload':
-            dst.writestr(info, data)
+            dst.writestr(copy.copy(info), data)
         target = None
         if info.filename == 'skill-upload/SKILL.md':
             target = 'atx-assistant/SKILL.md'
         elif path.parts[:2] == ('plugins', 'atx-assistant') and len(path.parts) > 3 and path.parts[2] in {'scripts', 'server', 'extras', 'bin'}:
             target = str(PurePosixPath('atx-assistant', *path.parts[2:]))
         if target:
-            info.filename = target
-            upload.writestr(info, data)
+            entry = copy.copy(info)
+            entry.filename = target
+            upload.writestr(entry, data)
             required.discard(target)
     if required:
         raise RuntimeError('技能包缺少必要文件：' + ', '.join(sorted(required)))
