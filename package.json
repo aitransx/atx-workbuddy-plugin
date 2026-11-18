@@ -1,6 +1,6 @@
 {
   "name": "@aitransx/workbuddy-atx-assistant",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "author": "AITransX",
   "homepage": "https://github.com/aitransx/atx-workbuddy-plugin#readme",
@@ -12,6 +12,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "pack": "node scripts/pack.mjs"
+    "pack": "node scripts/pack.mjs",
+    "test:artifacts": "node --test tests/artifacts.check.mjs"
   }
 }

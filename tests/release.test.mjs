@@ -9,6 +9,16 @@ import { execFileSync, spawn } from 'node:child_process'
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const psQuote = value => "'" + value.replaceAll("'", "''") + "'"
 
+test('0.3.0 版本在全部发布清单和服务入口保持一致', async () => {
+  const { VERSION } = await import('../plugins/atx-assistant/server/index.mjs')
+  assert.equal(VERSION, '0.3.0')
+  for (const file of ['package.json', 'plugins/atx-assistant/.codebuddy-plugin/plugin.json']) {
+    assert.equal(JSON.parse(readFileSync(join(root, file), 'utf8')).version, VERSION)
+  }
+  const market = JSON.parse(readFileSync(join(root, '.codebuddy-plugin/marketplace.json'), 'utf8'))
+  assert.equal(market.plugins.find(plugin => plugin.name === 'atx-assistant').version, VERSION)
+})
+
 test('Windows 真正 ZIP 解压目录经 shell 和 PATHEXT 完成 stdio initialize', { skip: process.platform !== 'win32', timeout: 30000 }, async () => {
   const temp = mkdtempSync(join(tmpdir(), 'atx-zip-'))
   const source = join(temp, 'source'), unpacked = join(temp, 'unpacked')
@@ -45,13 +55,13 @@ test('Windows 真正 ZIP 解压目录经 shell 和 PATHEXT 完成 stdio initiali
     child.stdin.end(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } }) + '\n')
   })
   assert.equal(result[0].result.serverInfo.name, 'atx-assistant')
-  assert.equal(result[0].result.serverInfo.version, '0.2.1')
+  assert.equal(result[0].result.serverInfo.version, '0.3.0')
 })
 
 test('打包在脏工作区拒绝且不覆盖已有产物，不修改索引', () => {
   const status = execFileSync('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: root, encoding: 'utf8' })
   if (!status.trim()) return
-  const files = ['ATX-workbuddy.zip', 'SHA256SUMS.txt'].map(name => join(root, 'releases', name))
+  const files = ['ATX-workbuddy.zip', 'ATX-skill.zip', 'SHA256SUMS.txt'].map(name => join(root, 'releases', name))
   const before = files.map(path => existsSync(path) ? readFileSync(path) : null)
   const index = execFileSync('git', ['diff', '--cached', '--binary'], { cwd: root })
   assert.throws(() => execFileSync(process.execPath, ['scripts/pack.mjs'], { cwd: root, stdio: 'pipe' }), error => {

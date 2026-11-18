@@ -1,12 +1,23 @@
 # ATX 智能体助手 · WorkBuddy 版
 
-版本 **0.2.1**。在 WorkBuddy 中接入 ATX 中转模型，并按需搜索、读网页、生图、识图。无需写代码或手动编辑 JSON。
+版本 **0.3.0**。在 WorkBuddy 中接入 ATX 中转模型，并按需搜索、读网页、生图、识图。无需写代码或手动编辑 JSON。
 
 **开始前**：先有一个 WorkBuddy 原有、可用且支持工具调用的聊天模型来完成安装和配置。插件和 Key 不会凭空提供可用模型、账户或余额。
 
-## 1. 安装
+## 1. 安装（Windows 新手默认：上传完整技能文件夹）
 
-在 WorkBuddy 对话框逐行发送：
+1. [下载最新版 ATX-skill.zip](https://github.com/aitransx/atx-workbuddy-plugin/releases/latest/download/ATX-skill.zip)，不要选 Source code (zip) 或 ATX-workbuddy.zip；可用同次发布的 SHA256SUMS.txt 核对文件。
+2. 解压 ZIP，得到唯一顶层文件夹 **atx-assistant**。
+3. 在 WorkBuddy「专家·技能·连接器 → 技能 → 添加技能 → 上传技能」选择这个完整文件夹（以当前客户端实际界面为准）。**不要仅上传旧 SKILL.md**：它不包含 scripts/cli.mjs、server 和 extras，不能独立运行。
+4. 确认技能列表中已启用，随后新开对话，请求「ATX 新手引导。不要发起收费测试。」
+
+也可对 WorkBuddy 说「请安装解压后的 atx-assistant 文件夹中的技能」，但这只是请求，不是已验证的自动安装保证；以当前客户端技能列表及包内 CLI 能运行为准。不同客户端入口可能不同，找不到文件夹上传时请先核对客户端支持，不要假定已经装好。
+
+上传版通过包内 CLI 使用功能，无需 MCP。Node 要求 20+，优先查找 WorkBuddy 的 `WORKBUDDY_EXTRA_PATHS` 中自带 Node，再查 PATH；两处都没有时停止并修复/重启 WorkBuddy，不猜安装路径，也不要求新手下载 Node。
+
+### 高级兼容方式：完整市场插件（MCP）
+
+熟悉插件市场且宿主支持该机制的用户，可在 WorkBuddy 对话框逐行发送以下命令；它们是兼容安装方式，不代表本版本已在所有客户端验证：
 
 ```
 /plugin marketplace add aitransx/atx-workbuddy-plugin
@@ -16,7 +27,7 @@
 
 也可从 [GitHub Release 下载 ATX-workbuddy.zip](https://github.com/aitransx/atx-workbuddy-plugin/releases/latest/download/ATX-workbuddy.zip)，在 WorkBuddy「设置 → 插件 → 添加自定义市场」中导入，安装并启用。不要选 “Source code (zip)”。**这个下载链接同样需要能访问 GitHub**；如果打不开，请先解决访问问题，或请可信维护者提供同一发布包并核对 SHA256。
 
-安装后新开对话，发送：
+不要同时启用上传技能和完整插件，以免重复入口。完整插件安装后新开对话，发送：
 
 > ATX 新手引导。不要发起收费测试。
 
@@ -68,7 +79,7 @@
 
 同步不添加型号、不重判能力，完成后按提示彻底重启。环境变量优先于本机配置，若仍用旧设置请检查环境覆盖。
 
-刷新目录只发现型号，不更新推荐、能力声明或本机模型。更新插件可发送 `/plugin marketplace update aitransx`，再 `/reload-plugins`；ZIP 用户重新导入新版。
+刷新目录只发现型号，不更新推荐、能力声明或本机模型。上传技能用户下载新版 ATX-skill.zip，解压并更新完整文件夹，保留个人目录配置。完整市场插件可发送 `/plugin marketplace update aitransx`，再 `/reload-plugins`；市场 ZIP 用户重新导入新版。
 
 ## 常见问题
 
@@ -87,6 +98,6 @@
 
 Key 优先级：`AITRANSX_API_KEY` → 主配置 Key → `models.json` 中唯一 ATX Key。`AITRANSX_BASE_URL` 可覆盖线路，仅接受无 userinfo、query、fragment 的 ATX HTTPS 域名，自动去掉末尾 `/chat/completions`。
 
-主配置为 `~/.workbuddy/atx-assistant/settings.json`，兼容 `ATX_DATA_DIR/settings.json` 旧数据，主配置同字段优先，损坏的可选旧文件不阻断有效主配置。`WORKBUDDY_HOME` 可覆盖 Node 主目录，但现有 Windows 设置脚本仍使用用户主目录。
+主配置为 `~/.workbuddy/atx-assistant/settings.json`，兼容 `ATX_DATA_DIR/settings.json` 旧数据，主配置同字段优先，损坏的可选旧文件不阻断有效主配置。`WORKBUDDY_HOME` 可覆盖 Node CLI / MCP 的 `.workbuddy` 根目录；现有 Windows 设置脚本不遵循 `WORKBUDDY_HOME` 或 `ATX_DATA_DIR`，固定写 `%USERPROFILE%/.workbuddy/atx-assistant/settings.json`，仅在 `%USERPROFILE%/.workbuddy/models.json` 中按提示同步 Key。使用覆盖目录时，应先确认恢复默认路径或自行对齐配置，不能认为脚本保存到了覆盖目录。
 
 开发与发布：[RELEASING.md](RELEASING.md) · 标识归属：[NOTICE.md](NOTICE.md)

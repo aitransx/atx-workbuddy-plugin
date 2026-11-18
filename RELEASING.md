@@ -14,16 +14,19 @@ plugins/atx-assistant/               # 插件本体
   skills/atx-assistant/SKILL.md      # 意图路由与安全规则
   extras/                            # 双击设置密钥工具（Windows）
 tests/                               # node --test 离线测试
-scripts/pack.mjs                     # 生成 Release ZIP
+skill-upload/SKILL.md                # 独立上传技能最终用户说明模板
+plugins/atx-assistant/scripts/cli.mjs # 独立技能 CLI 入口
+scripts/pack.mjs                     # 从干净 HEAD 生成两个 Release ZIP
+tests/artifacts.check.mjs            # 打包后手动运行的真实产物验收
 ```
 
 ## 公开内容
 
 仅提交插件源码、测试、图标和说明。**不要提交 API Key、环境文件、个人 models.json / settings.json、本地压缩包或 .github 目录。** 尚未选择开源许可证，暂为 UNLICENSED。
 
-## 清单维护与新手边界（0.2.1）
+## 清单维护与新手边界（0.3.0）
 
-- 本插件是唯一官方入口，不推荐独立模型包；不要删除既有 WorkBuddy-Model-Pack。
+- 默认 Windows 新手交付 ATX-skill.zip，上传解压的完整 atx-assistant 文件夹；完整市场插件保留为高级兼容方式。两包共用插件实现，不是独立模型包；不要删除既有 WorkBuddy-Model-Pack。自然语言安装仅为请求，不是已验证保证；禁止引导仅上传旧 SKILL.md。
 - `plugins/atx-assistant/server/model-registry.json` 是包内可信单一维护清单，包含推荐聊天候选、默认媒体型号及已确认媒体声明，绝不放 Key。推荐候选聊天和 tools 支持未知，不得声称已实测。
 - 初始媒体声明只保留 gpt-image-2 生图及 terra 识图。其他能力要有用户明确确认，不能用名字、目录存在或远端 metadata 推测。用户通过 configure 保存的本机声明优先于默认清单。
 - 清单更新只能随插件版本交付；`/models` 刷新仅发现型号，缓存上限 10000，查询分页不写本地模型，不更新推荐。
@@ -39,13 +42,20 @@ scripts/pack.mjs                     # 生成 Release ZIP
 
 1. 同步修改版本号：`package.json`、`plugins/atx-assistant/.codebuddy-plugin/plugin.json`、`.codebuddy-plugin/marketplace.json`、`server/index.mjs` 的 `VERSION`、README「当前版本」。
 2. 运行 `npm test`（离线，不发起收费请求），并检查无敏感信息：`git grep -nE "aitx-[A-Za-z0-9]{16,}"` 应无结果。
-3. 由维护者审查并提交全部修改（包括新增测试），确认工作区、索引及未跟踪文件均干净后运行 `npm run pack`。脚本只归档 `HEAD` 树，不读取暂存区内容、不修改索引；不干净时在生成产物前拒绝。生成 `releases/ATX-workbuddy.zip` 与 `releases/SHA256SUMS.txt`，不删除 releases 或其他目录。ZIP 顶层即市场根目录，包含 README、NOTICE 和 RELEASING，可直接导入。
+3. 由维护者审查并提交全部修改（包括新增测试），确认工作区、索引及未跟踪文件均干净后运行 `npm run pack`。脚本只归档 `HEAD` 树，不读取暂存区内容、不修改索引；不干净时在生成产物前拒绝。需要 Node 20+、git 和 PATH 可用的 python（仅标准库 zipfile）。git archive 先将 HEAD 导出到临时 ZIP，Python 只从该归档重组，不读取未提交工作树；不生成 ps1/bat，只原样携带已有设置脚本。生成 `releases/ATX-workbuddy.zip`、`releases/ATX-skill.zip` 与包含两包 SHA256 的 `releases/SHA256SUMS.txt`。市场 ZIP 顶层仍是市场根目录，包含 README、NOTICE、RELEASING 和完整插件；技能 ZIP 顶层唯一 `atx-assistant/`，SKILL.md 来自 skill-upload 模板，scripts/server/extras/bin 来自插件，不含 MCP 声明、个人配置、Key 或缓存。临时目录完成后清理，不删除既有 releases。打包后运行 `npm run test:artifacts` 验证真实双包结构、HEAD 文件一致性、校验和及解压后 CLI；此命令必须有最终包，常规 `npm test` 不要求包已存在。
 4. 经授权后由维护者推送 main，创建 `vX.Y.Z` 标签。
-5. 由官方维护者手动创建 GitHub Release，上传 ZIP 和 SHA256SUMS.txt。
+5. 由官方维护者手动创建 GitHub Release，上传两个 ZIP 和 SHA256SUMS.txt。
 6. 核对 Release 非草稿、附件可下载后再通知用户。
 
 固定最新版下载地址：
 https://github.com/aitransx/atx-workbuddy-plugin/releases/latest/download/ATX-workbuddy.zip
+
+## 验收边界
+
+- 常规测试只验证离线 mock、CLI 和临时 ZIP 启动链路；打包后测试验证最终 HEAD 双包，不代表 WorkBuddy 技能上传 UI、自然语言安装、真实宿主 MCP 或 ATX 收费能力已实测。
+- 未提交状态下 pack 应拒绝且不覆盖产物、不改索引。不要为跑通打包绕过干净 HEAD 检查；未授权提交时只报告最终产物验收待维护者提交后执行。
+- Node CLI 优先使用 WORKBUDDY_EXTRA_PATHS 的 WorkBuddy 自带 Node，再查 PATH；未找到停止，不下载。Windows 设置脚本固定使用 `%USERPROFILE%/.workbuddy`，不遵循 Node 的 WORKBUDDY_HOME / ATX_DATA_DIR 覆盖；文档必须提示配置目录差异。
+- 技能包不带 `.mcp.json` 或插件清单，完整 server 内部模块仍保留供 CLI 复用。不要仅凭缺少 MCP 声明认为依赖可删减。
 
 ## 本地开发调试
 

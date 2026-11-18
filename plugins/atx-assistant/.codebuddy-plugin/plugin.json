@@ -1,6 +1,6 @@
 {
   "name": "atx-assistant",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "ATX 智能体助手：一句话把 ATX 中转模型（Claude / GPT / Gemini 等）加入 WorkBuddy 模型列表，并在聊天中用 ATX 联网搜索、读取网页、生成图片、识别图片。ATX 官方插件，调用可能收费。",
   "author": {
     "name": "AITransX",

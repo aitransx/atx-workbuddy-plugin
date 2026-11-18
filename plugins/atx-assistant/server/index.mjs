@@ -9,7 +9,7 @@ import { setupTools } from './tools-setup.mjs'
 import { mediaTools } from './tools-media.mjs'
 import { catalogTools } from './tools-catalog.mjs'
 
-export const VERSION = '0.2.1'
+export const VERSION = '0.3.0'
 
 export const INSTRUCTIONS = [
   'ATX 即 AITransX。本插件为唯一官方接入入口；新手先 atx_onboarding，使用 WorkBuddy 原有可用模型执行配置，不索要 Key、不自动开 GUI。',
