@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, readFileSync, readdirSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { resolveCredential, importModels, removeModels, readModels, modelEntry, mask, saveSettings, loadSettings, isAtxUrl } from '../plugins/atx-assistant/server/config.mjs'
+import { resolveCredential, importModels, removeModels, readModels, modelEntry, mask, saveSettings, loadSettings, isAtxUrl, normalizeBaseUrl } from '../plugins/atx-assistant/server/config.mjs'
 
 const KEY_A = 'aitx-' + 'a'.repeat(40)
 const KEY_B = 'aitx-' + 'b'.repeat(40)
@@ -129,6 +129,33 @@ test('非法 models.json 结构拒绝覆盖', () => {
   writeFileSync(s.models, '{"unexpected":true}')
   assert.throws(() => importModels([], { path: s.models }), /格式不受支持/)
   assert.equal(readFileSync(s.models, 'utf8'), '{"unexpected":true}')
+})
+
+test('所有配置入口规范线路并拒绝危险 URL', () => {
+  const s = sandbox()
+  const chat = 'https://api-hk.aitransx.com/v1/chat/completions///'
+  const base = 'https://api-hk.aitransx.com/v1'
+  assert.equal(normalizeBaseUrl(chat), base)
+  saveSettings({ apiKey: KEY_A, baseUrl: chat }, s.env)
+  assert.equal(loadSettings(s.env).baseUrl, base)
+  assert.equal(resolveCredential({ ...s.env, AITRANSX_BASE_URL: chat }).baseUrl, base)
+  assert.equal(modelEntry('a/b', { baseUrl: chat }).url, base + '/chat/completions')
+  for (const url of ['http://api.aitransx.com/v1', 'https://u:p@api.aitransx.com/v1', 'https://@api.aitransx.com/v1', 'https://api.aitransx.com/v1?', 'https://api.aitransx.com/v1#', 'https://api.aitransx.com.evil.example/v1', 'https://evil.example/v1', 'https://api.aitransx.com/\\\\evil']) {
+    assert.throws(() => normalizeBaseUrl(url), /HTTPS/)
+    assert.throws(() => resolveCredential({ ...s.env, AITRANSX_BASE_URL: url }), /HTTPS/)
+    assert.throws(() => saveSettings({ baseUrl: url }, s.env), /HTTPS/)
+    assert.throws(() => modelEntry('a/b', { baseUrl: url }), /HTTPS/)
+  }
+})
+
+test('损坏可选 legacy 不覆盖或阻断有效 primary', () => {
+  const s = sandbox()
+  saveSettings({ apiKey: KEY_B, baseUrl: 'https://api.aitransx.com/v1' }, s.env)
+  mkdirSync(s.env.ATX_DATA_DIR)
+  writeFileSync(join(s.env.ATX_DATA_DIR, 'settings.json'), '{broken')
+  assert.equal(resolveCredential(s.env).key, KEY_B)
+  saveSettings({ searchEnabled: false }, s.env)
+  assert.equal(loadSettings(s.env).searchEnabled, false)
 })
 
 test('mask never reveals the full key', () => {

@@ -19,13 +19,29 @@ export function settingsPath(env = process.env) {
 function storedSettings(env) {
   const legacy = env.ATX_DATA_DIR && !env.ATX_DATA_DIR.includes('${') ? join(env.ATX_DATA_DIR, 'settings.json') : null
   // 主配置逐字段优先，旧插件数据只作兼容读取，不复制密钥到另一目录。
-  return { ...(legacy && legacy !== settingsPath(env) ? readJson(legacy, {}) : {}), ...readJson(settingsPath(env), {}) }
+  let previous = {}
+  if (legacy && legacy !== settingsPath(env)) {
+    try { previous = readJson(legacy, {}) } catch { /* 可选旧配置损坏不能阻断主配置。 */ }
+  }
+  return { ...previous, ...readJson(settingsPath(env), {}) }
 }
 
-export const isAtxUrl = value => {
-  try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.search && !u.hash && (u.hostname === 'aitransx.com' || u.hostname.endsWith('.aitransx.com')) } catch { return false }
+export function normalizeBaseUrl(value) {
+  const invalid = () => new Error('只接受 aitransx.com 域名下的 HTTPS 地址，不允许 userinfo、query 或 fragment。')
+  if (typeof value !== 'string') throw invalid()
+  const text = value.trim()
+  if (!text || /[\u0000-\u0020\\?#]/u.test(text) || !/^https:\/\//i.test(text)) throw invalid()
+  let url
+  try { url = new URL(text) } catch { throw invalid() }
+  if (url.protocol !== 'https:' || url.username || url.password || text.slice(8).split('/')[0].includes('@') ||
+      !(url.hostname === 'aitransx.com' || url.hostname.endsWith('.aitransx.com'))) throw invalid()
+  url.pathname = url.pathname.replace(/\/+$/, '').replace(/\/chat\/completions$/, '')
+  return url.href.replace(/\/+$/, '')
 }
-export const baseFromChatUrl = url => url.replace(/\/+$/, '').replace(/\/chat\/completions$/, '')
+export const isAtxUrl = value => {
+  try { normalizeBaseUrl(value); return true } catch { return false }
+}
+export const baseFromChatUrl = normalizeBaseUrl
 export const mask = key => typeof key === 'string' && key.length > 12 ? `${key.slice(0, 7)}…${key.slice(-4)}` : '(未设置)'
 
 function readJson(path, fallback) {
@@ -60,12 +76,15 @@ export const DEFAULT_SETTINGS = Object.freeze({
 
 export function loadSettings(env = process.env) {
   const stored = storedSettings(env)
+  if (stored.baseUrl) stored.baseUrl = normalizeBaseUrl(stored.baseUrl)
   return { ...DEFAULT_SETTINGS, ...stored, models: Array.isArray(stored.models) ? stored.models : DEFAULT_SETTINGS.models.map(m => ({ ...m })) }
 }
 export function saveSettings(patch, env = process.env) {
   const path = settingsPath(env)
   const current = storedSettings(env)
-  writeJson(path, { ...current, ...patch })
+  const merged = { ...current, ...patch }
+  if (merged.baseUrl) merged.baseUrl = normalizeBaseUrl(merged.baseUrl)
+  writeJson(path, merged)
   return loadSettings(env)
 }
 
@@ -76,7 +95,8 @@ export function saveSettings(patch, env = process.env) {
 export function resolveCredential(env = process.env) {
   const settings = loadSettings(env)
   const envKey = env.AITRANSX_API_KEY && !env.AITRANSX_API_KEY.includes('${') ? env.AITRANSX_API_KEY.trim() : ''
-  const envBase = env.AITRANSX_BASE_URL && !env.AITRANSX_BASE_URL.includes('${') ? env.AITRANSX_BASE_URL.trim() : ''
+  const rawBase = env.AITRANSX_BASE_URL && !env.AITRANSX_BASE_URL.includes('${') ? env.AITRANSX_BASE_URL.trim() : ''
+  const envBase = rawBase ? normalizeBaseUrl(rawBase) : ''
   if (envKey) return { key: envKey, source: 'env:AITRANSX_API_KEY', baseUrl: envBase || settings.baseUrl || DEFAULT_BASE_URL }
   if (settings.apiKey) return { key: settings.apiKey, source: 'plugin-settings', baseUrl: envBase || settings.baseUrl || DEFAULT_BASE_URL }
   let found = []
@@ -98,7 +118,7 @@ export function modelEntry(id, { baseUrl, key, vision = false, reasoning = false
   return {
     id, name: id, vendor: 'Custom',
     ...(icons[vendor] ? { iconUrl: icons[vendor] } : {}),
-    url: `${baseUrl.replace(/\/+$/, '')}/chat/completions`,
+    url: `${normalizeBaseUrl(baseUrl)}/chat/completions`,
     apiKey: key,
     supportsToolCall: true, supportsImages: !!vision, supportsReasoning: !!reasoning, useCustomProtocol: false,
   }

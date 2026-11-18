@@ -40,8 +40,8 @@ ATX 即 AITransX，一个兼容 OpenAI 协议的模型中转服务。本插件�
 
 1. 本插件为唯一官方入口，不推荐单独模型包。先使用 WorkBuddy 原有可用且支持工具调用的模型执行配置；插件和 Key 不能凭空提供全能力。
 2. 调用 `atx_onboarding`，给出 `setKeyTool` 的明确绝对路径。用户手动打开设置工具，私下保存 Key；不索要 Key、不自动开 GUI、无需改 JSON。Node 主配置为 `~/.workbuddy/atx-assistant/settings.json`，兼容 ATX_DATA_DIR 旧数据，主配置同字段优先。
-3. 调用 `atx_status`；需验证时 `verify=true` 只检查目录访问，不证明模型能力。
-4. 先 `atx_list_chat_models` 查询候选。推荐清单也未实测聊天/tools，必须由用户明确确认支持后，且明确授权导入，才 `atx_import_models(confirmChatSupport=true)`。图片输入默认 false，不能猜测。不要自动批量导入 1325 目录，包含语音/视频/embedding 等。
+3. 调用 `atx_status`；需验证时 `verify=true` 只检查目录访问，不证明模型能力或余额。Key 不公开，正常请求会发送给 ATX。设置脚本保存 Key 和所选线路，对已有聊天模型只同步 Key、不同步线路 URL；换线路后必须另行明确授权同步。
+4. 先 `atx_list_chat_models` 展示推荐的目录可用子集和 skipped。聊天/tools 能力未知、未实测；用户知晓风险并明确授权试用后，才 `atx_import_models(confirmUnverified=true)`，兼容参数 confirmChatSupport 也只表示知情授权，不表示能力证明，不要求用户证明。默认跳过缺失推荐并返回 skipped；图片输入默认 false，不猜测，不导入全目录。给新手使用自然语言示例，不让用户复制内部工具参数。
 5. 导入或同步后提醒从托盘彻底退出再打开。更换 Key/线路只影响插件工具，已有聊天模型要用户另行授权 `atx_sync_models(confirm=true)` 或重新导入；备份并拒绝非 ATX 同 ID 冲突。
 6. `atx_models` 和聊天列表支持 `refresh`、`keyword`、`offset`、`limit`（1–200），缓存上限 10000。刷新 `/models` 仅发现型号，不更新推荐、能力或 models.json。包内唯一清单 `server/model-registry.json` 随插件版本更新，无 Key。
 7. 原始媒体声明只保留 gpt-image-2 生图及 terra 识图，不是收费实测。其他型号需用户明确确认后 configure，不依据名字或目录存在推断。本版本离线 mock 测试不代表上游全能力可用。

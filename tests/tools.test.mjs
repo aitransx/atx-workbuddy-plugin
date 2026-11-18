@@ -212,9 +212,58 @@ test('版本清单一致且注册表不携带Key', () => {
     const data = JSON.parse(readFileSync(new URL('../' + path, import.meta.url), 'utf8'))
     assert.equal(data.plugins ? data.plugins[0].version : data.version, VERSION)
   }
-  assert.equal(VERSION, '0.2.0')
+  assert.equal(VERSION, '0.2.1')
   const registry = readFileSync(new URL('../plugins/atx-assistant/server/model-registry.json', import.meta.url), 'utf8')
   assert.ok(!registry.includes('apiKey'))
+})
+
+test('推荐只展示和导入目录子集，授权不声称能力已验证', async () => {
+  const t = setup()
+  try {
+    const ctx = { env: t.env, catalog: createCatalog({ fetchModels: async () => ({ data: [{ id: 'openai/gpt-6.1-sol' }] }) }), settings: () => loadSettings(t.env) }
+    const tools = buildTools(ctx)
+    const run = (name, args = {}) => tools.find(x => x.name === name).run(args)
+    const list = await run('atx_list_chat_models')
+    assert.deepEqual(list.recommended.map(m => m.id), ['openai/gpt-6.1-sol'])
+    assert.equal(list.skipped.length, 5)
+    assert.equal(list.recommended[0].toolsSupport, 'unknown')
+    const before = readFileSync(join(t.home, 'models.json'), 'utf8')
+    await assert.rejects(run('atx_import_models'), /知晓风险/)
+    assert.equal(readFileSync(join(t.home, 'models.json'), 'utf8'), before)
+    const imported = await run('atx_import_models', { confirmUnverified: true })
+    assert.deepEqual(imported.added, ['openai/gpt-6.1-sol'])
+    assert.deepEqual(imported.skipped, list.skipped)
+    assert.match(imported.note, /能力仍未知、未实测/)
+    ctx.catalog = createCatalog({ fetchModels: async () => ({ data: [{ id: 'other/model' }] }) })
+    const emptyBefore = readFileSync(join(t.home, 'models.json'), 'utf8')
+    const empty = await run('atx_import_models', { confirmUnverified: true })
+    assert.deepEqual(empty.added, []); assert.equal(empty.skipped.length, 6)
+    assert.equal(readFileSync(join(t.home, 'models.json'), 'utf8'), emptyBefore)
+  } finally { t.restore() }
+})
+
+test('同线路仅更换 Key 会重建客户端和目录，不复用旧账户结果', async () => {
+  const home = mkdtempSync(join(tmpdir(), 'atx-key-cache-'))
+  const env = { WORKBUDDY_HOME: home, AITRANSX_API_KEY: KEY }
+  let clients = 0
+  const calls = []
+  const ctx = buildContext(env, { clientFactory: options => {
+    clients++
+    return createClient({ ...options, fetchImpl: async (url, init) => {
+      calls.push(init.headers.Authorization)
+      return new Response(JSON.stringify({ data: [{ id: init.headers.Authorization.endsWith('z'.repeat(40)) ? 'new/model' : 'old/model' }] }), { status: 200 })
+    } })
+  } })
+  const old = ctx.catalog
+  await old.ensureFresh()
+  assert.ok(old.snapshot().models.some(m => m.id === 'old/model'))
+  env.AITRANSX_API_KEY = 'aitx-' + 'z'.repeat(40)
+  assert.notEqual(ctx.catalog, old)
+  assert.equal(ctx.catalog.snapshot().lastSuccess, null)
+  const fresh = await ctx.catalog.ensureFresh()
+  assert.ok(fresh.models.some(m => m.id === 'new/model'))
+  assert.ok(!fresh.models.some(m => m.id === 'old/model'))
+  assert.equal(clients, 2); assert.equal(calls.length, 2)
 })
 
 test('configure requires confirmed capability before changing defaults', async () => {
