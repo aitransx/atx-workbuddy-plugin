@@ -105,13 +105,13 @@ test('CLI 调用真实 handler，错误脱敏且收费失败只执行一次', as
   env.AITRANSX_API_KEY = KEY
   let calls = 0
   const contextFactory = env => buildContext(env, { clientFactory: () => ({
-    async search() { calls++; throw new Error(`上游拒绝 ${KEY} aitx-anotherSecretValue123`) },
+    async search() { calls++; throw new Error(`上游拒绝 ${KEY} ${'aitx-' + 'anotherSecretValue123'}`) },
   }) })
   const result = await runCli(['atx_search', '{"query":"测试"}'], { env, contextFactory })
   assert.equal(result.exitCode, 1)
   assert.equal(calls, 1)
   assert.ok(!result.output.includes(KEY))
-  assert.ok(!result.output.includes('aitx-anotherSecretValue123'))
+  assert.ok(!result.output.includes('aitx-' + 'anotherSecretValue123'))
   assert.match(JSON.parse(result.output).error, /已脱敏/)
 })
 
