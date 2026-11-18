@@ -1,113 +1,48 @@
-# ATX 智能体助手 · WorkBuddy 版
+# ATX · WorkBuddy 技能
 
-版本 **0.3.0**。在 WorkBuddy 中接入 ATX 中转模型，并按需搜索、读网页、生图、识图。无需写代码或手动编辑 JSON。
+在 WorkBuddy 中使用 ATX 中转模型、搜索、读网页、生图和识图。
 
-**开始前**：先有一个 WorkBuddy 原有、可用且支持工具调用的聊天模型来完成安装和配置。插件和 Key 不会凭空提供可用模型、账户或余额。
+## 安装
 
-## 1. 最简单安装：把仓库链接交给 WorkBuddy
+打开 WorkBuddy 的 Agent 模式，发送：
 
-在 WorkBuddy 的 Agent 模式中，直接发送：
+> 帮我安装这个仓库的 ATX 技能，按 INSTALL.md 操作：https://github.com/aitransx/atx-workbuddy-plugin
 
-> 请阅读 https://github.com/aitransx/atx-workbuddy-plugin 的 README 和 INSTALL.md，按文档帮我安装 ATX 技能，并完成离线检查。不要发起收费测试，不要让我把 API Key 发到聊天里。遇到已有版本先告诉我，不要直接覆盖。
+AI 会下载、检查并安装技能。遇到旧版先确认，安装时不做收费测试。
 
-**不需要去找“设置 → 插件”，也不需要输入插件市场命令。** AI 的安装步骤写在 [INSTALL.md](INSTALL.md)：下载发布技能包、核对校验和、检查完整文件，再安装到用户技能目录并执行离线检查。需要文件授权或遇到旧版本时，按提示确认即可。
+也可[下载 ATX-skill.zip](https://github.com/aitransx/atx-workbuddy-plugin/releases/latest/download/ATX-skill.zip)，解压后通过「专家·技能·连接器 → 技能 → 添加技能 → 上传技能」选择完整的 `atx-assistant` 文件夹。
 
-安装检查成功后，新开对话发送「ATX 新手引导，不做收费测试」。如果当前客户端未发现新技能，再使用下面的上传入口。文档可供 AI 执行，不等于已在每个客户端实测自动安装成功；未检查完成不得报告安装成功。
+## 设置 Key
 
-### 备用方式：手动上传完整技能文件夹
+安装后新开对话，发送：
 
-1. [下载最新版 ATX-skill.zip](https://github.com/aitransx/atx-workbuddy-plugin/releases/latest/download/ATX-skill.zip)，不要选 Source code (zip) 或 ATX-workbuddy.zip；可用同次发布的 SHA256SUMS.txt 核对文件。
-2. 解压 ZIP，得到唯一顶层文件夹 **atx-assistant**。
-3. 在 WorkBuddy「专家·技能·连接器 → 技能 → 添加技能 → 上传技能」选择这个完整文件夹（以当前客户端实际界面为准）。**不要仅上传旧 SKILL.md**：它不包含 scripts/cli.mjs、server 和 extras，不能独立运行。
-4. 确认技能列表中已启用，随后新开对话，请求「ATX 新手引导。不要发起收费测试。」
+> ATX 新手引导
 
-也可对 WorkBuddy 说「请安装解压后的 atx-assistant 文件夹中的技能」，但这只是请求，不是已验证的自动安装保证；以当前客户端技能列表及包内 CLI 能运行为准。不同客户端入口可能不同，找不到文件夹上传时请先核对客户端支持，不要假定已经装好。
+到 [ATX 控制台](https://aitransx.com/zh/login) 创建 API Key，按引导打开本地设置工具填写。**不要把 Key 发到聊天里。**
 
-上传版通过包内 CLI 使用功能，无需 MCP。Node 要求 20+，优先查找 WorkBuddy 的 `WORKBUDDY_EXTRA_PATHS` 中自带 Node，再查 PATH；两处都没有时停止并修复/重启 WorkBuddy，不猜安装路径，也不要求新手下载 Node。
+## 使用
 
-### 高级兼容方式：完整市场插件（MCP）
+直接告诉 WorkBuddy：
 
-熟悉插件市场且宿主支持该机制的用户，可在 WorkBuddy 对话框逐行发送以下命令；它们是兼容安装方式，不代表本版本已在所有客户端验证：
+- 查看 ATX 推荐聊天模型。
+- 把这些模型加入 WorkBuddy 试用。
+- 用 ATX 生成一张秋日公园插画。
+- 用 ATX 识别这张图片：图片路径。
+- 用 ATX 搜索这个问题，并附来源。
 
-```
-/plugin marketplace add aitransx/atx-workbuddy-plugin
-/plugin install atx-assistant@aitransx
-/reload-plugins
-```
+导入聊天模型后，从托盘彻底退出 WorkBuddy 再打开，然后切换模型。
 
-`ATX-workbuddy.zip` 仅保留给明确支持完整插件市场的宿主，不适用于本页的 WorkBuddy 桌面版默认安装流程。桌面版用户请使用上面的 AI 安装或技能上传方式。下载仍需能访问 GitHub；访问失败应如实报告，不得把下载失败说成安装成功。
+## 更新
 
-不要同时启用上传技能和完整插件，以免重复入口。完整插件安装后新开对话，发送：
+> 按仓库 INSTALL.md 帮我更新 ATX 技能，保留现有配置。
 
-> ATX 新手引导。不要发起收费测试。
+更换 Key 或线路后，可发送「将当前 Key 和线路同步到已有 ATX 模型，我同意备份并更新」。
 
-## 2. 私下设置 Key
+## 注意
 
-先到 [ATX 控制台](https://aitransx.com/zh/login) 注册或登录，创建以 `aitx-` 开头的 API Key，并确认账户余额与所需模型权限。
+- 先用 WorkBuddy 原有可用模型完成安装配置。
+- API 调用可能收费；失败后先看 ATX 请求记录，不要反复重试。
+- Key 本机明文保存，调用时发送给 ATX，请勿公开。
+- 当前通过离线测试；自动安装全流程及真实模型能力尚未全面实测。模型目录存在不代表能力可用。
 
-引导会返回设置工具的绝对路径；手动双击 `extras/设置ATX密钥.bat`，在本地窗口粘贴 Key。不知道路径就再次请求新手引导，插件不会自动打开窗口。
-
-- 已经配置过 ATX 模型的用户，插件可以复用本机唯一的 ATX Key；多个不同 Key 时需要明确设置一个。
-- 设置脚本会保存 Key 和所选线路，但对已有 ATX 聊天模型**只按提示同步 Key，不同步线路 URL**。改线路后，需另行明确要求同步当前 Key 和线路到已有模型。
-- 配置是本机明文文件，请保护访问权限。Key 不应公开到聊天、截图、群或 Issue；正常 API 请求会把 Key 发送给 ATX，不是“永不上传”。如果曾公开，请在控制台重置。
-
-然后发送：
-
-> 检查 ATX 状态并验证目录访问，不做收费测试。
-
-目录访问成功只表示当次目录接口可访问，**不保证聊天、工具调用、生图、识图能力，也不保证余额、权限或后续请求成功**。
-
-## 3. 知情试用推荐聊天模型
-
-先发送：
-
-> 查看 ATX 推荐候选中当前目录可用的型号，以及跳过的型号，不要导入。
-
-推荐清单只是未实测候选。看过结果后，如果愿意承担试用风险，再发送：
-
-> 我知道这些推荐候选的聊天和工具调用能力未知、未实测，仍同意把当前目录可用的推荐子集导入 WorkBuddy 试用，跳过缺失型号。不要发起收费测试。
-
-不要求你证明未知能力。导入时会备份 `models.json`，只更新同 ID 的 ATX 条目；非 ATX 同 ID 冲突会拒绝写入。图片输入默认关闭，不自动导入整个目录。
-
-完成后，**从右下角托盘彻底退出 WorkBuddy 再打开**，再切换模型；只关闭窗口不算。若试用模型不能聊天或调用工具，请切回原有可用模型。
-
-## 4. 按需使用（可能收费）
-
-- 「用 ATX 搜索这个技术问题，并附来源。」
-- 「用 ATX 生成一张秋日公园插画，只生成一张。」
-- 「用 ATX 识别这张图片：`C:/Users/你的名字/Pictures/screenshot.png`，提取报错文字。」
-
-每条都会真实调用 ATX，可能收费。失败或超时后先看 ATX 请求记录，不要立即重复；上游可能已处理并计费。插件不自动重试或换模型。
-
-默认生图 `openai/gpt-image-2`、识图 `openai/gpt-6.1-terra`。这些是保留的原始媒体能力声明，**声明不等于收费实测**；旧推荐同样未实测。当前版本仅用离线 mock 验证流程，不保证上游能力。新增媒体声明需用户明确确认，不能从名称或目录存在推断。
-
-## 更换 Key、线路与更新
-
-插件工具会读取新配置，并在 Key 或线路变化后使旧目录缓存失效；已导入聊天模型不会由插件自动同步。设置脚本只同步 Key。换线路后明确发送：
-
-> 将当前 Key 和线路同步到已有 ATX 聊天模型，我同意备份并更新。
-
-同步不添加型号、不重判能力，完成后按提示彻底重启。环境变量优先于本机配置，若仍用旧设置请检查环境覆盖。
-
-刷新目录只发现型号，不更新推荐、能力声明或本机模型。上传技能用户下载新版 ATX-skill.zip，解压并更新完整文件夹，保留个人目录配置。完整市场插件可发送 `/plugin marketplace update aitransx`，再 `/reload-plugins`；市场 ZIP 用户重新导入新版。
-
-## 常见问题
-
-| 现象 | 处理 |
-|---|---|
-| 找不到工具 | 确认启用插件，重新加载或重启后新开对话 |
-| 没有 Key / 多个 Key | 按新手引导私下使用设置工具 |
-| 导入后找不到模型 | 从托盘彻底退出再打开 |
-| 401、余额、限流或权限问题 | 去 ATX 控制台核对 Key、余额、权限及请求记录 |
-| 型号缺失 / 能力不支持 | 刷新目录核对完整 ID；目录存在也不保证能力 |
-| 设置脚本被拦截 | 核实来源后在同一 extras 目录对 set-key.ps1 使用 PowerShell 运行 |
-
-仍有问题可到 [GitHub Issues](https://github.com/aitransx/atx-workbuddy-plugin/issues) 提交版本、操作及报错，遮住 Key 和个人信息。
-
-## 高级配置
-
-Key 优先级：`AITRANSX_API_KEY` → 主配置 Key → `models.json` 中唯一 ATX Key。`AITRANSX_BASE_URL` 可覆盖线路，仅接受无 userinfo、query、fragment 的 ATX HTTPS 域名，自动去掉末尾 `/chat/completions`。
-
-主配置为 `~/.workbuddy/atx-assistant/settings.json`，兼容 `ATX_DATA_DIR/settings.json` 旧数据，主配置同字段优先，损坏的可选旧文件不阻断有效主配置。`WORKBUDDY_HOME` 可覆盖 Node CLI / MCP 的 `.workbuddy` 根目录；现有 Windows 设置脚本不遵循 `WORKBUDDY_HOME` 或 `ATX_DATA_DIR`，固定写 `%USERPROFILE%/.workbuddy/atx-assistant/settings.json`，仅在 `%USERPROFILE%/.workbuddy/models.json` 中按提示同步 Key。使用覆盖目录时，应先确认恢复默认路径或自行对齐配置，不能认为脚本保存到了覆盖目录。
-
-开发与发布：[RELEASING.md](RELEASING.md) · 标识归属：[NOTICE.md](NOTICE.md)
+[AI 安装步骤](INSTALL.md) · [发布说明](RELEASING.md) · [问题反馈](https://github.com/aitransx/atx-workbuddy-plugin/issues)
