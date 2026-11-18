@@ -4,7 +4,17 @@
 
 **开始前**：先有一个 WorkBuddy 原有、可用且支持工具调用的聊天模型来完成安装和配置。插件和 Key 不会凭空提供可用模型、账户或余额。
 
-## 1. 安装（Windows 新手默认：上传完整技能文件夹）
+## 1. 最简单安装：把仓库链接交给 WorkBuddy
+
+在 WorkBuddy 的 Agent 模式中，直接发送：
+
+> 请阅读 https://github.com/aitransx/atx-workbuddy-plugin 的 README 和 INSTALL.md，按文档帮我安装 ATX 技能，并完成离线检查。不要发起收费测试，不要让我把 API Key 发到聊天里。遇到已有版本先告诉我，不要直接覆盖。
+
+**不需要去找“设置 → 插件”，也不需要输入插件市场命令。** AI 的安装步骤写在 [INSTALL.md](INSTALL.md)：下载发布技能包、核对校验和、检查完整文件，再安装到用户技能目录并执行离线检查。需要文件授权或遇到旧版本时，按提示确认即可。
+
+安装检查成功后，新开对话发送「ATX 新手引导，不做收费测试」。如果当前客户端未发现新技能，再使用下面的上传入口。文档可供 AI 执行，不等于已在每个客户端实测自动安装成功；未检查完成不得报告安装成功。
+
+### 备用方式：手动上传完整技能文件夹
 
 1. [下载最新版 ATX-skill.zip](https://github.com/aitransx/atx-workbuddy-plugin/releases/latest/download/ATX-skill.zip)，不要选 Source code (zip) 或 ATX-workbuddy.zip；可用同次发布的 SHA256SUMS.txt 核对文件。
 2. 解压 ZIP，得到唯一顶层文件夹 **atx-assistant**。
@@ -25,7 +35,7 @@
 /reload-plugins
 ```
 
-也可从 [GitHub Release 下载 ATX-workbuddy.zip](https://github.com/aitransx/atx-workbuddy-plugin/releases/latest/download/ATX-workbuddy.zip)，在 WorkBuddy「设置 → 插件 → 添加自定义市场」中导入，安装并启用。不要选 “Source code (zip)”。**这个下载链接同样需要能访问 GitHub**；如果打不开，请先解决访问问题，或请可信维护者提供同一发布包并核对 SHA256。
+`ATX-workbuddy.zip` 仅保留给明确支持完整插件市场的宿主，不适用于本页的 WorkBuddy 桌面版默认安装流程。桌面版用户请使用上面的 AI 安装或技能上传方式。下载仍需能访问 GitHub；访问失败应如实报告，不得把下载失败说成安装成功。
 
 不要同时启用上传技能和完整插件，以免重复入口。完整插件安装后新开对话，发送：
 
