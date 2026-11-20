@@ -11,3 +11,24 @@ dist/
 __pycache__/
 .DS_Store
 Thumbs.db
+
+# Local assistant state, credentials and generated content
+.workbuddy/
+.codebuddy/
+.vscode/
+.idea/
+coverage/
+atx-images/
+manifest-cache/
+**/updates/
+settings.json
+models.json
+catalog-cache.json
+*.bak
+*.bak-*
+*.tmp
+*.tmp-*
+*.pem
+*.key
+*.p12
+*.pfx
