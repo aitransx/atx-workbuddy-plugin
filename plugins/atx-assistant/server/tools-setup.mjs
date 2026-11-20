@@ -80,6 +80,16 @@ export function setupTools(ctx) {
       async run(args) {
         const state = args.refresh ? await ctx.catalog.refresh() : await ctx.catalog.ensureFresh()
         const ids = imported().map(m => m.id)
+        if (ctx.manifest) {
+          const remote = await ctx.manifest.check({ force: args.refresh === true })
+          if (remote.manifest) return {
+            recommended: remote.manifest.recommendedChat.map(m => ({ ...m, imported: ids.includes(m.id),
+              availability: state.lastError ? 'unknown' : state.models.find(x => x.id === m.id)?.availability || 'missing' })),
+            remoteMetadata: remote, ...pageModels(state, args),
+            note: '官方声明不是实时实测。更新导入请先检查 ATX 更新，展示计划后再确认应用；不自动覆盖已有配置。',
+          }
+          return { recommended: [], remoteMetadata: remote, ...pageModels(state, args), note: '官方清单暂不可用，未沿用旧推荐自动导入。' }
+        }
         const available = RECOMMENDED_CHAT.filter(id => state.models.some(m => m.id === id && m.availability === 'available'))
         return { recommended: available.map(id => ({ id, imported: ids.includes(id), chatSupport: 'unknown', toolsSupport: 'unknown', availability: 'available' })),
           skipped: RECOMMENDED_CHAT.filter(id => !available.includes(id)),
@@ -94,12 +104,13 @@ export function setupTools(ctx) {
         confirmChatSupport: { type: 'boolean', description: '兼容旧参数；仅表示知情试用授权，不表示验证能力。' },
         supportsImages: { type: 'boolean', description: '仅用户明确确认图片输入时为 true，默认 false。' } }),
       async run({ models, confirmUnverified = false, confirmChatSupport = false, supportsImages = false }) {
+        if (ctx.manifest) throw new Error('请先运行 atx_check_updates 展示最新差异，再按用户选中项调用 atx_apply_updates；旧导入入口不绕过更新计划。')
         const cred = resolveCredential(env)
         if (!cred.key) throw new Error('还没有 ATX Key，请先用 atx_onboarding 私下设置。')
         const recommended = !models?.length || (models.length === 1 && models[0] === 'recommended')
         let ids = recommended ? [...RECOMMENDED_CHAT] : models.map(s => String(s).trim())
         ids = [...new Set(ids)]
-        if (ids.length > 50 || ids.some(id => !id || /\s|[\u0000-\u001f\u007f]/u.test(id) || id.length > 200)) throw new Error('模型 ID 不合法或超过 50 个；请按需选择完整型号，不要导入全目录。')
+        if (ids.length > 50 || ids.some(id => !id || /\s|[\u0000-\u001f\u007f]/u.test(id) || Buffer.byteLength(id, 'utf8') > 256)) throw new Error('模型 ID 不合法或超过 50 个；请按需选择完整型号，不要导入全目录。')
         const state = await ctx.catalog.ensureFresh()
         if (state.lastError || state.lastSuccess === null) throw new Error('模型目录获取失败或尚未刷新，未写入。请检查 Key/线路后明确刷新目录，再导入；目录存在也不证明能力。')
         const missing = ids.filter(id => !state.models.some(m => m.id === id && m.availability === 'available'))

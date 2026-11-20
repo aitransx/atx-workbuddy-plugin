@@ -1,6 +1,6 @@
 ---
 name: atx-assistant
-description: ATX（AITransX）官方助手。用户提到 ATX / AITransX / aitransx、想把 ATX 中转的 Claude / GPT / Gemini 等模型加入 WorkBuddy、检查 ATX Key 或状态、或要求「用 ATX 搜索 / 读网页 / 生成图片 / 识别图片 / 提取图片文字」时使用。
+description: ATX（AITransX）官方助手。用户提到 ATX / AITransX / aitransx、想把 ATX 中转的 Claude / GPT / Gemini 等模型加入 WorkBuddy、检查 ATX Key 或状态、检查模型更新、或要求「用 ATX 搜索 / 读网页 / 生成图片 / GIF 动图 / 识别图片 / 提取图片文字」时使用。
 description_en: Official ATX (AITransX) assistant. Use when the user mentions ATX/AITransX, wants to add ATX-relayed models to WorkBuddy, check ATX status, or asks to search, fetch pages, generate or recognize images with ATX.
 metadata:
   author: AITransX
@@ -18,11 +18,11 @@ ATX 即 AITransX，一个兼容 OpenAI 协议的模型中转服务。本插件�
 | 首次使用 / ATX 新手引导 | `atx_onboarding`，返回设置工具绝对路径，不自动开 GUI |
 | 更换 Key 后同步已有聊天模型 | 先询问明确授权，再 `atx_sync_models(confirm=true)` |
 | 检查 ATX 状态 / ATX 连上了吗 | `atx_status`（要验证 Key 时 `verify: true`，免费） |
-| 把 ATX 模型加入 WorkBuddy / 添加 Claude 模型 | 先 `atx_list_chat_models`，再 `atx_import_models` |
+| 把 ATX 模型加入 WorkBuddy / 检查模型更新 | `atx_check_updates` 展示计划，用户明确选择后 `atx_apply_updates` |
 | 删掉某个 ATX 模型 | `atx_remove_models` |
 | 用 ATX 搜索… | `atx_search` |
 | 用 ATX 读取这个网页… | `atx_fetch` |
-| 用 ATX 生成一张… | `atx_generate_image` |
+| 用 ATX 生成图片 / GIF 动图 | `atx_generate_image`（GIF 须明确要求） |
 | 用 ATX 识别这张图片 / 提取文字 | `atx_recognize_image` |
 | 查看 / 刷新 ATX 生图识图模型 | `atx_models` |
 | 改默认生图 / 识图模型、确认新型号能力 | `atx_configure` |
@@ -38,10 +38,16 @@ ATX 即 AITransX，一个兼容 OpenAI 协议的模型中转服务。本插件�
 
 ## 首次使用流程
 
-1. 本插件为唯一官方入口，不推荐单独模型包。先使用 WorkBuddy 原有可用且支持工具调用的模型执行配置；插件和 Key 不能凭空提供全能力。
+1. 默认使用官方独立技能包，完整插件为兼容方式，不推荐单独模型包。先使用 WorkBuddy 原有可用且支持工具调用的模型执行配置；插件和 Key 不能凭空提供全能力。
 2. 调用 `atx_onboarding`，给出 `setKeyTool` 的明确绝对路径。用户手动打开设置工具，私下保存 Key；不索要 Key、不自动开 GUI、无需改 JSON。Node 主配置为 `~/.workbuddy/atx-assistant/settings.json`，兼容 ATX_DATA_DIR 旧数据，主配置同字段优先。
 3. 调用 `atx_status`；需验证时 `verify=true` 只检查目录访问，不证明模型能力或余额。Key 不公开，正常请求会发送给 ATX。设置脚本保存 Key 和所选线路，对已有聊天模型只同步 Key、不同步线路 URL；换线路后必须另行明确授权同步。
-4. 先 `atx_list_chat_models` 展示推荐的目录可用子集和 skipped。聊天/tools 能力未知、未实测；用户知晓风险并明确授权试用后，才 `atx_import_models(confirmUnverified=true)`，兼容参数 confirmChatSupport 也只表示知情授权，不表示能力证明，不要求用户证明。默认跳过缺失推荐并返回 skipped；图片输入默认 false，不猜测，不导入全目录。给新手使用自然语言示例，不让用户复制内部工具参数。
-5. 导入或同步后提醒从托盘彻底退出再打开。更换 Key/线路只影响插件工具，已有聊天模型要用户另行授权 `atx_sync_models(confirm=true)` 或重新导入；备份并拒绝非 ATX 同 ID 冲突。
-6. `atx_models` 和聊天列表支持 `refresh`、`keyword`、`offset`、`limit`（1–200），缓存上限 10000。刷新 `/models` 仅发现型号，不更新推荐、能力或 models.json。包内唯一清单 `server/model-registry.json` 随插件版本更新，无 Key。
-7. 原始媒体声明只保留 gpt-image-2 生图及 terra 识图，不是收费实测。其他型号需用户明确确认后 configure，不依据名字或目录存在推断。本版本离线 mock 测试不代表上游全能力可用。
+4. 模型推荐和能力由官方后台 manifest 维护。先 `atx_check_updates` 展示 plan 的新增、媒体能力、字段/默认变更、替代、冲突及不可用项；用户明确选择后，携带 planId、所选 ID 和 `confirm=true` 才 `atx_apply_updates`。禁止用旧 `atx_import_models` 绕过计划。未知 tools 或未验证能力须说明风险并另获知情授权后才 `confirmUnverified=true`；tools=false 禁止作为工具模型，不声称已实测。
+5. `mediaIds` 表示明确采用媒体能力，不自动切默认。`defaultChangeIds` 选择计划中的 fixed 或 follow，现有默认按 fixed 保留；follow 不越过能力及授权边界。未选择不应用，个人字段及跨线路冲突不覆盖，替代不自动删旧模型。应用或同步后提醒从托盘彻底退出再打开；同步已有模型须另行授权 `atx_sync_models(confirm=true)`。
+6. 新配置默认 api-hk，不更改现有用户线路。公开 manifest 请求不带 Key，目录确认是独立鉴权请求。缓存 TTL 300 秒，最近有效清单（LKG）最多 7 天；离线/过期只供参考，不可应用，503 阻断相关操作。检查可保存缓存/计划，不自动写业务配置，仅使用时检查，不后台轮询或通知。
+7. `atx_models` 和聊天列表支持 `refresh`、`keyword`、`offset`、`limit`，范围以当前 schema 为准。刷新 `/models` 仅发现型号，不证明能力、不更新推荐或 models.json。包内清单是离线基础，不根据名字猜能力，离线 mock 不代表收费实测。
+
+## GIF 动图
+
+仅用户明确要求 GIF 时调用一次 `atx_generate_image`，工具参数 `outputFormat="gif"`、可选 `frameCount` / `frameDurationMs`，`size` 默认 `auto`；对应官方字段 `output_format: "gif"`、`frame_count`、`frame_duration_ms`。帧数本地限额 1–16，省略不发送；每帧时长为正整数毫秒。仅从后台 manifest 中 `gif=true` 的模型选择并经计划授权采用，不猜型号，不把静态图能力当 GIF。可能收费，失败/超时不自动重试或换模型，先看请求记录；展示返回的文件路径，不承诺真实收费验收。
+
+独立技能包通过 `scripts/cli.mjs list` 获取 schema，再用 CLI 调用上述全部工具，无需 MCP，不假定 `mcp__atx__*` 存在；CLI 禁止传 Key，使用本地设置工具。

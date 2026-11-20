@@ -21,7 +21,8 @@ export function decodeImage(encoded) {
     throw new Error('服务返回的图片编码无效或过大。请勿自动重试，先检查 ATX 请求记录。')
   }
   const data = Buffer.from(encoded, 'base64')
-  return { data, mediaType: sniffImage(data) }
+  const signature = data.toString('ascii', 0, 6)
+  return { data, mediaType: signature === 'GIF87a' || signature === 'GIF89a' ? 'image/gif' : sniffImage(data) }
 }
 
 /** Strip surrounding quotes that Windows "Copy as path" adds. */
@@ -53,7 +54,8 @@ export async function imageInputs(values, max = 4, opts) {
 
 /** Save generated image bytes into the output directory; name is content-addressed to avoid duplicates. */
 export async function saveImage(data, mediaType, dir) {
-  const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[mediaType]
+  const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' }[mediaType]
+  if (!ext) throw new Error('服务返回的图片格式不受支持。')
   await mkdir(dir, { recursive: true })
   const path = join(dir, `atx-${createHash('sha256').update(data).digest('hex').slice(0, 12)}.${ext}`)
   await writeFile(path, data)

@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { join, dirname } from 'node:path'
 import { SEED_MODELS, MEDIA_DEFAULTS } from './catalog.mjs'
 
-export const DEFAULT_BASE_URL = 'https://api.aitransx.com/v1'
+export const DEFAULT_BASE_URL = 'https://api-hk.aitransx.com/v1'
 export const KEY_PATTERN = /^aitx-[A-Za-z0-9]{16,}$/
 
 export function workbuddyDir(env = process.env) {
@@ -66,6 +66,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   baseUrl: '',
   imageModel: MEDIA_DEFAULTS.image,
   visionModel: MEDIA_DEFAULTS.vision,
+  gifModel: '',
+  mediaModes: { image: 'fixed', vision: 'fixed', gif: 'fixed' },
   models: SEED_MODELS.map(({ id, vision, image }) => ({ id, vision, image })),
   refreshHours: 24,
   searchEnabled: true,
@@ -107,8 +109,15 @@ export function resolveCredential(env = process.env) {
   return { key: '', source: 'none', baseUrl: envBase || settings.baseUrl || DEFAULT_BASE_URL }
 }
 
+/** Manifest source resolves only explicit non-secret base configuration, never models.json credentials. */
+export function publicBaseUrl(env = process.env) {
+  const value = env.AITRANSX_BASE_URL
+  const explicit = value && !value.includes('${') ? value.trim() : ''
+  return normalizeBaseUrl(explicit || loadSettings(env).baseUrl || DEFAULT_BASE_URL)
+}
+
 /** Build a WorkBuddy custom-model entry for an ATX model. */
-export function modelEntry(id, { baseUrl, key, vision = false, reasoning = false } = {}) {
+export function modelEntry(id, { baseUrl, key, vision = false, reasoning = false, tools = true } = {}) {
   const vendor = id.split('/')[0].replace(/^~/, '')
   const icons = {
     anthropic: 'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/anthropic/mono.svg',
@@ -120,7 +129,7 @@ export function modelEntry(id, { baseUrl, key, vision = false, reasoning = false
     ...(icons[vendor] ? { iconUrl: icons[vendor] } : {}),
     url: `${normalizeBaseUrl(baseUrl)}/chat/completions`,
     apiKey: key,
-    supportsToolCall: true, supportsImages: !!vision, supportsReasoning: !!reasoning, useCustomProtocol: false,
+    supportsToolCall: tools === true, supportsImages: !!vision, supportsReasoning: !!reasoning, useCustomProtocol: false,
   }
 }
 

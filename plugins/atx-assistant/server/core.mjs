@@ -1,6 +1,6 @@
 import { isIP } from 'node:net';
 
-const DEFAULT_BASE_URL = 'https://api.aitransx.com/v1';
+const DEFAULT_BASE_URL = 'https://api-hk.aitransx.com/v1';
 const NORMAL_LIMIT = 2 * 1024 * 1024;
 const IMAGE_LIMIT = 32 * 1024 * 1024;
 const INPUT_IMAGE_LIMIT = 4 * 1024 * 1024;
@@ -117,6 +117,19 @@ async function readJson(response, limit, signal) {
   }
 }
 
+export function validateGenerationOptions({ output_format, frame_count, frame_duration_ms } = {}) {
+  if (output_format !== undefined && !['png', 'gif'].includes(output_format)) throw fail('输出格式必须为 png 或 gif。');
+  if (output_format !== 'gif' && (frame_count !== undefined || frame_duration_ms !== undefined)) {
+    throw fail('帧参数仅适用于 GIF 输出。');
+  }
+  if (frame_count !== undefined && (!Number.isInteger(frame_count) || frame_count < 1 || frame_count > 16)) {
+    throw fail('GIF 帧数须为 1–16 的整数（客户端本地限额）。');
+  }
+  if (frame_duration_ms !== undefined && (!Number.isSafeInteger(frame_duration_ms) || frame_duration_ms < 1)) {
+    throw fail('GIF 每帧时长须为正整数毫秒。');
+  }
+}
+
 export function createClient({ baseUrl = DEFAULT_BASE_URL, getApiKey = () => process.env.AITRANSX_API_KEY,
   timeoutMs = 180000, fetchImpl = globalThis.fetch } = {}) {
   const base = parseHttps(baseUrl);
@@ -185,11 +198,16 @@ export function createClient({ baseUrl = DEFAULT_BASE_URL, getApiKey = () => pro
     validatePublicUrl(url);
     return post('/tools/fetch', { url }, signal);
   }
-  function generate({ model, prompt, size = '1024x1024', references = [] } = {}, signal) {
+  function generate({ model, prompt, size, references = [], output_format, frame_count, frame_duration_ms } = {}, signal) {
+    validateGenerationOptions({ output_format, frame_count, frame_duration_ms });
+    size ??= output_format === 'gif' ? 'auto' : '1024x1024';
     requiredText(model, 'model'); requiredText(prompt, 'prompt'); requiredText(size, 'image size');
-    if (!Array.isArray(references)) throw fail('Image references must be an array.');
+    if (!Array.isArray(references) || references.length > 4) throw fail('参考图必须为数组，最多 4 张。');
     references.forEach(validateImage);
     return post('/images/generations', { model, prompt, size, response_format: 'b64_json',
+      ...(output_format !== undefined ? { output_format } : {}),
+      ...(frame_count !== undefined ? { frame_count } : {}),
+      ...(frame_duration_ms !== undefined ? { frame_duration_ms } : {}),
       ...(references.length ? { input_references: references.map(url => ({ type: 'image_url', image_url: { url } })) } : {}) }, signal);
   }
   function recognize({ model, prompt, images } = {}, signal) {

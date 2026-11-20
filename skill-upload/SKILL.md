@@ -1,6 +1,6 @@
 ---
 name: atx-assistant
-description: ATX（AITransX）独立上传技能。用于把 ATX 聊天模型加入 WorkBuddy、检查状态、私下设置密钥，以及用户明确要求的 ATX 搜索、网页读取、生图、识图。通过包内 CLI 执行，无需安装或连接 MCP。
+description: ATX（AITransX）独立上传技能。用于把 ATX 聊天模型加入 WorkBuddy、检查状态、私下设置密钥，检查模型更新，以及用户明确要求的 ATX 搜索、网页读取、生图、GIF 动图、识图。通过包内 CLI 执行，无需安装或连接 MCP。
 agent_created: true
 ---
 
@@ -56,19 +56,30 @@ node "<技能绝对目录>/scripts/cli.mjs" atx_status '{"verify":true}'
 | 新手引导 / 设置 Key | atx_onboarding |
 | 检查状态 | atx_status |
 | 查看聊天模型候选 | atx_list_chat_models |
-| 导入聊天模型 | atx_import_models |
+| 添加聊天模型 / 检查模型更新 | atx_check_updates，展示计划并明确选择后 atx_apply_updates |
 | 换 Key 或线路后同步已有模型 | atx_sync_models |
 | 移除指定 ATX 模型 | atx_remove_models |
 | 查看生图/识图能力表 | atx_models |
 | 修改默认模型、人工确认能力、功能开关 | atx_configure |
 | 用户明确要求 ATX 搜索 | atx_search |
 | 用户明确要求 ATX 读取网页 | atx_fetch |
-| 用户明确要求 ATX 生图 | atx_generate_image |
+| 用户明确要求 ATX 生图 / GIF 动图 | atx_generate_image |
 | 用户明确指定图片并要求识别/OCR | atx_recognize_image |
 
-先展示推荐的目录可用子集和 skipped。聊天/tools 能力未知、未实测；用户知晓风险并明确授权试用后，才用 `confirmUnverified=true` 导入（兼容参数 confirmChatSupport 也仅代表知情授权，不是能力证明）。不要求用户证明能力，不批量导入全目录，图片输入默认 false。同步已有模型需要用户另行明确授权，再用 `confirm=true`；移除和修改配置也仅按明确要求执行。导入或同步后提醒从右下角托盘彻底退出 WorkBuddy 再打开，只关窗口不生效。
+## 模型更新（0.4.0）
 
-`atx_models` 和聊天列表支持 refresh、keyword、offset、limit，具体范围从 list schema 获取。刷新 /models 只发现型号，不证明能力、不自动更新推荐或本地 models.json。新型号的生图/识图能力须用户明确确认后才用 configure 写入，不根据名字猜测；包内原始声明不代表收费实测。
+- 官方后台 manifest 维护推荐和能力；新配置默认 api-hk，保留现有用户线路。公开 manifest 请求不带 Key；目录可用性是独立鉴权检查，目录存在不证明能力。
+- 先 `atx_check_updates` 展示 plan 的新增、媒体能力、字段/默认变更、替代、冲突及不可用项。用户明确选择后，携带 planId、选中 ID 和 `confirm=true` 调用 `atx_apply_updates`。未选择不应用；**禁止直接调用旧 `atx_import_models` 绕过计划**。
+- tools 未知或能力未验证时，说明风险并取得知情授权后才传 `confirmUnverified=true`；tools=false 禁止作为工具模型。不要声称已实测、不批量导入全目录、不推断图片能力。
+- `mediaIds` 表示明确采用所列媒体能力，不自动切默认。`defaultChangeIds` 从计划选择 fixed 或 follow；现有默认按 fixed 保留，follow 也不能越过能力和授权边界。
+- manifest 缓存 TTL 为 300 秒，最近有效清单（LKG）最多保留 7 天；离线/过期只供参考，不可应用，503 阻断相关操作。检查可保存缓存/计划，不自动写业务配置；仅在使用时检查，不后台轮询或通知。
+- 同步、移除和人工配置须另行明确授权；同步用 `confirm=true`。应用或同步聊天模型后提醒从托盘彻底退出 WorkBuddy 再打开，只关窗口不生效。个人字段及跨线路冲突不覆盖，替代不自动删旧模型。
+
+`atx_models` 和聊天列表支持 refresh、keyword、offset、limit，范围以 CLI list schema 为准。`/models` 刷新只发现型号，不证明能力、不更新推荐或本地 models.json。包内清单只是离线基础，不代表收费实测。
+
+## GIF 动图
+
+只有用户明确要求 GIF 才调用一次 `atx_generate_image`，CLI 参数为 `outputFormat="gif"`、可选 `frameCount` / `frameDurationMs`，`size` 默认 `auto`；对应官方请求字段 `output_format: "gif"`、`frame_count`、`frame_duration_ms`。帧数本地限额 1–16，省略不发送；每帧时长为正整数毫秒。模型从官方 manifest 中 `gif=true` 的能力项选择并经上述计划授权采用，不猜型号、不把静态图能力当 GIF。可能收费，失败/超时不自动重试、不换模型，先核对请求记录；只展示返回的 GIF 文件路径，不宣称已真实收费验收。
 
 ## 收费与外部内容
 

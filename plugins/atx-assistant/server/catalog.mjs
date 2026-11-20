@@ -8,7 +8,7 @@ export const SEED_MODELS = Object.freeze(registry.media.map(m => Object.freeze({
 const LIMIT = 10000;
 const FAILURE = 'Model catalog refresh failed.';
 const validId = (id) => typeof id === 'string' && id.length > 0
-  && id.length <= 200 && !/\s|[\u0000-\u001f\u007f]/u.test(id);
+  && Buffer.byteLength(id, 'utf8') <= 256 && !/\s|[\u0000-\u001f\u007f]/u.test(id);
 
 function remoteIds(response) {
   let candidates;
@@ -30,6 +30,7 @@ export function createCatalog({ models = SEED_MODELS, fetchModels, refreshHours 
     if (!validId(model?.id) || configured.has(model.id)) continue;
     configured.set(model.id, {
       id: model.id, vision: model.vision === true, image: model.image === true,
+      ...(model.gif === true ? { gif: true } : {}),
       source: 'user-confirmed', availability: 'unknown',
     });
     if (configured.size === LIMIT) break;
@@ -47,7 +48,7 @@ export function createCatalog({ models = SEED_MODELS, fetchModels, refreshHours 
   }
 
   function select(capability, requested, defaultId) {
-    if (capability !== 'vision' && capability !== 'image') throw new Error('Unsupported model capability.');
+    if (!['vision', 'image', 'gif'].includes(capability)) throw new Error('Unsupported model capability.');
     const id = requested == null || requested === '' ? defaultId : requested;
     const model = table.find((item) => item.id === id);
     if (!model || model[capability] !== true || model.availability === 'missing') {

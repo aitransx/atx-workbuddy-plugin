@@ -8,9 +8,9 @@ const json = (data, init = {}) => new Response(JSON.stringify(data), { status: 2
 const client = (fetchImpl, extra = {}) => createClient({ getApiKey: () => key, fetchImpl, ...extra });
 const ref = url => ({ type: 'image_url', image_url: { url } });
 
-test('public catalog is GET without authorization or a request body', async () => {
-  const api = createClient({ getApiKey: () => { assert.fail('public catalog must not resolve key'); }, fetchImpl: async (url, options) => {
-    assert.equal(url, 'https://api.aitransx.com/v1/models');
+test('model catalog is GET without authorization when no credential is available', async () => {
+  const api = createClient({ getApiKey: () => undefined, fetchImpl: async (url, options) => {
+    assert.equal(url, 'https://api-hk.aitransx.com/v1/models');
     assert.equal(options.method, 'GET');
     assert.equal(options.headers.Authorization, undefined);
     assert.equal(options.body, undefined);
@@ -28,7 +28,7 @@ test('request shapes, defaults, authorization, raw response, no retry', async ()
   await api.generate({ model: 'image-model', prompt: 'edit', references: [image] });
   await api.recognize({ model: 'vision-model', prompt: 'describe', images: [image, 'https://example.com/image.png'] });
   assert.equal(calls.length, 5);
-  assert.equal(calls[0].url, 'https://api.aitransx.com/v1/tools/search');
+  assert.equal(calls[0].url, 'https://api-hk.aitransx.com/v1/tools/search');
   assert.deepEqual(calls[0].body, { query: 'search', count: 5, need_content: true });
   assert.deepEqual(calls[1].body, { url: 'https://example.com/page?q=1' });
   assert.deepEqual(calls[2].body, { model: 'image-model', prompt: 'draw', size: '1024x1024', response_format: 'b64_json' });

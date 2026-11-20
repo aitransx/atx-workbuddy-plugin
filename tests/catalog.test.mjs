@@ -72,7 +72,7 @@ test('failed, empty and malformed refreshes retain cache and expose only a fixed
   await catalog.refresh();
   const saved = catalog.snapshot();
   for (const bad of [new Error('SECRET_TOKEN https://private.example'), {}, { data: [] },
-    { models: {} }, { data: [{ id: '' }, { id: 'x'.repeat(201) }, { id: ' ' }, null] }]) {
+    { models: {} }, { data: [{ id: '' }, { id: 'x'.repeat(257) }, { id: ' ' }, null] }]) {
     clock += 1;
     response = bad;
     await catalog.refresh();
@@ -89,15 +89,16 @@ test('failed, empty and malformed refreshes retain cache and expose only a fixed
 
 test('catalog bound is 10000 with ID length limit and configured entries preserved', async () => {
   const catalog = createCatalog({ fetchModels: async () => ({ data: [
-    { id: 'x'.repeat(201) }, { id: 'z'.repeat(200) },
+    { id: 'x'.repeat(257) }, { id: 'z'.repeat(256) }, { id: '界'.repeat(85) }, { id: '界'.repeat(86) },
     ...Array.from({ length: 12000 }, (_, i) => ({ id: `remote-${i}` })),
   ] }) });
   await catalog.refresh();
   const { models } = catalog.snapshot();
   assert.equal(models.length, 10000);
   assert.ok(SEED_MODELS.every((seed) => models.some((m) => m.id === seed.id)));
-  assert.ok(models.some((m) => m.id.length === 200));
-  assert.ok(models.every((m) => m.id.length <= 200));
+  assert.ok(models.some((m) => m.id === 'z'.repeat(256)));
+  assert.ok(models.some((m) => m.id === '界'.repeat(85)));
+  assert.ok(models.every((m) => Buffer.byteLength(m.id, 'utf8') <= 256));
 });
 
 test('concurrent refresh and ensureFresh share a single request and signal', async () => {
@@ -139,6 +140,25 @@ test('automatic refresh starts on first call and rate-limits failures by lastAtt
   assert.equal(calls, 2);
   await catalog.refresh();
   assert.equal(calls, 3);
+});
+
+test('GIF 能力仅信任本地明确声明，不为旧条目添加 gif:false', async () => {
+  const catalog = createCatalog({ models: [{ id: 'animation', gif: true }, { id: 'still', image: true, gif: false }],
+    fetchModels: async () => ({ data: [{ id: 'animation' }, { id: 'still', gif: true }, { id: 'remote-gif', gif: true }] }) });
+  assert.equal(catalog.select('gif', undefined, 'animation').gif, true);
+  assert.throws(() => catalog.select('gif', 'still'));
+  await catalog.refresh();
+  assert.equal(catalog.select('gif', 'animation').availability, 'available');
+  assert.throws(() => catalog.select('gif', 'remote-gif'));
+  assert.ok(catalog.snapshot().models.filter(m => m.id !== 'animation').every(m => !Object.hasOwn(m, 'gif')));
+  assert.ok(SEED_MODELS.every(m => !m.gif));
+});
+
+test('本地能力 ID 也按 UTF-8 的 256 字节边界校验', () => {
+  const accepted = ['a'.repeat(256), '界'.repeat(85), '😀'.repeat(64)];
+  const rejected = ['a'.repeat(257), '界'.repeat(86), '😀'.repeat(65)];
+  const catalog = createCatalog({ models: [...accepted, ...rejected].map(id => ({ id, gif: true })) });
+  assert.deepEqual(catalog.snapshot().models.map(m => m.id), accepted);
 });
 
 test('zero hours disables automatic refresh but explicit refresh works', async () => {

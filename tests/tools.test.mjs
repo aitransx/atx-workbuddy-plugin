@@ -212,7 +212,7 @@ test('版本清单一致且注册表不携带Key', () => {
     const data = JSON.parse(readFileSync(new URL('../' + path, import.meta.url), 'utf8'))
     assert.equal(data.plugins ? data.plugins[0].version : data.version, VERSION)
   }
-  assert.equal(VERSION, '0.3.0')
+  assert.equal(VERSION, '0.4.0')
   const registry = readFileSync(new URL('../plugins/atx-assistant/server/model-registry.json', import.meta.url), 'utf8')
   assert.ok(!registry.includes('apiKey'))
 })

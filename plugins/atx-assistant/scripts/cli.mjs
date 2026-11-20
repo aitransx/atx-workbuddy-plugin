@@ -29,6 +29,9 @@ function validate(value, schema) {
     case 'number': if (typeof value !== 'number' || !Number.isFinite(value)) invalid(); break
     default: throw new Error('工具 schema 类型不受 CLI 支持，未执行。')
   }
+  if (schema.const !== undefined && value !== schema.const) invalid()
+  if (schema.enum && !schema.enum.includes(value)) invalid()
+  if (schema.uniqueItems && new Set(value.map(v => JSON.stringify(v))).size !== value.length) invalid()
   if (schema.minimum !== undefined && value < schema.minimum) invalid()
   if (schema.maximum !== undefined && value > schema.maximum) invalid()
 }
@@ -49,7 +52,7 @@ export async function runCli(argv, { env = process.env, contextFactory = buildCo
     if (json !== undefined) {
       try { args = JSON.parse(json) } catch { throw new Error('JSON 参数格式无效；未执行。') }
     }
-    secret = resolveCredential(env).key
+    if (name !== 'atx_check_updates') secret = resolveCredential(env).key
     const tools = buildTools(contextFactory(env)).filter(tool => tool.name !== 'atx_set_key')
     let result
     if (name === 'list') {

@@ -1,5 +1,5 @@
 // Paid capability tools: search, fetch, image generation, vision. Never auto-retried.
-import { validatePublicUrl } from './core.mjs'
+import { validatePublicUrl, validateGenerationOptions } from './core.mjs'
 import { imageInputs, decodeImage, saveImage } from './images.mjs'
 import { join } from 'node:path'
 
@@ -29,8 +29,9 @@ export function friendlyError(error) {
 export function mediaTools(ctx) {
   const { settings, cwd, outputDir } = ctx
   const choose = async (capability, requested) => {
+    if (typeof ctx.resolveMediaModel === 'function') return ctx.resolveMediaModel(capability, requested)
     await ctx.catalog.ensureFresh()
-    const def = capability === 'vision' ? settings().visionModel : settings().imageModel
+    const def = capability === 'vision' ? settings().visionModel : capability === 'gif' ? settings().gifModel : settings().imageModel
     try { return ctx.catalog.select(capability, requested, def).id }
     catch { throw new Error('所选模型未确认支持该能力或目录中已不可用。请用 atx_models 查看；不会自动换模型或重试。') }
   }
@@ -54,22 +55,32 @@ export function mediaTools(ctx) {
 
   if (s.imageEnabled) tools.push({
     name: 'atx_generate_image',
-    description: '按用户要求通过 ATX 生成图片或参考图生成（收费，不自动重试），图片保存到本地并返回路径。每次只生成一张。',
+    description: '按用户要求通过 ATX 生成图片或参考图生成（收费，不自动重试）。只有用户明确要求 GIF 动图时才选择 gif，每次仅执行一次，保存本地并返回路径。',
     inputSchema: obj({
       prompt: { type: 'string', description: '图片描述或编辑指令。' },
       model: { type: 'string', description: '可选，完整模型 ID，须在能力表中标为支持生图；省略用默认。' },
-      size: { type: 'string', description: '尺寸，默认 1024x1024。' },
+      size: { type: 'string', description: '尺寸，静态图默认 1024x1024，GIF 默认 auto。' },
+      outputFormat: { type: 'string', enum: ['image', 'gif'], description: '默认 image；仅用户明确要求 GIF 动图时选择 gif。' },
+      frameCount: { type: 'integer', minimum: 1, maximum: 16, description: '仅 GIF，帧数 1–16 为客户端本地限额；省略时不发送，不指定服务端默认。' },
+      frameDurationMs: { type: 'integer', minimum: 1, description: '仅 GIF，每帧时长，正整数毫秒；省略时不发送。' },
       references: strList('可选参考图：本地路径或 HTTPS 链接，最多 4 张，本地每张 ≤4 MiB，会上传到 ATX。'),
       outputDir: { type: 'string', description: '可选，保存目录，默认当前工作目录下的 atx-images。' },
     }, ['prompt']),
-    run: wrap(async ({ prompt, model, size = '1024x1024', references = [], outputDir: dir }) => {
-      const id = await choose('image', model)
+    run: wrap(async ({ prompt, model, size, references = [], outputFormat = 'image', frameCount, frameDurationMs, outputDir: dir }) => {
+      if (!['image', 'gif'].includes(outputFormat)) throw new Error('输出格式必须为 image 或 gif。')
+      const options = { ...(outputFormat === 'gif' ? { output_format: 'gif' } : {}),
+        ...(frameCount !== undefined ? { frame_count: frameCount } : {}),
+        ...(frameDurationMs !== undefined ? { frame_duration_ms: frameDurationMs } : {}) }
+      validateGenerationOptions(options)
+      if (!Array.isArray(references) || references.length > 4) throw new Error('参考图必须为数组，最多 4 张。')
+      const id = await choose(outputFormat === 'gif' ? 'gif' : 'image', model)
       const refs = references.length ? await imageInputs(references, 4, { cwd: cwd() }) : []
-      const result = await ctx.client.generate({ model: id, prompt, size, references: refs })
+      const result = await ctx.client.generate({ model: id, prompt, size: size ?? (outputFormat === 'gif' ? 'auto' : '1024x1024'), references: refs, ...options })
       const item = result?.data?.[0]
       if (!item) throw new Error('服务未返回图片。请先检查 ATX 请求记录，避免重复计费。')
-      if (!item.b64_json && item.url) return { model: id, url: validatePublicUrl(item.url), note: '上游返回临时链接，可能会过期，请尽快保存。' }
+      if (outputFormat !== 'gif' && !item.b64_json && item.url) return { model: id, url: validatePublicUrl(item.url), note: '上游返回临时链接，可能会过期，请尽快保存。' }
       const { data, mediaType } = decodeImage(item.b64_json)
+      if (outputFormat === 'gif' && mediaType !== 'image/gif') throw new Error('请求 GIF 但服务未返回 GIF 字节。请先检查 ATX 请求记录，不要自动重试。')
       const path = await saveImage(data, mediaType, dir || outputDir())
       return { model: id, path, bytes: data.length, note: '图片已保存。请用该路径向用户展示或打开；不要声称已看过图片内容，也不要重新生成。' }
     }),
